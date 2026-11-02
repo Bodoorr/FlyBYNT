@@ -1,5 +1,6 @@
 package com.ga.seat_service.repository;
 
+import com.ga.seat_service.enums.SeatStatus;
 import com.ga.seat_service.models.SeatInventory;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
@@ -12,4 +13,6 @@ public interface SeatInventoryRepository extends MongoRepository<SeatInventory, 
     boolean existsByFlightId(String flightId);
 
     Optional<SeatInventory> findByFlightIdAndSeatId(String flightId, String seatId);
+
+    List<SeatInventory> findByFlightIdAndStatus(String flightId, SeatStatus status);
 }

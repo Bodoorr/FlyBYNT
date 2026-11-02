@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -42,6 +43,25 @@ public class SeatService {
 
         return seats.stream()
                 .map(s -> new SeatResponse(s.getId(), s.getSeatNumber(), statusMap.get(s.getId())))
+                .toList();
+    }
+
+
+    public SeatResponse getSeat(String flightId, String seatId) {
+        SeatInventory inv = seatInventoryRepository.findByFlightIdAndSeatId(flightId, seatId)
+                .orElseThrow(() -> new SeatNotFoundException("Seat " + seatId + " not found on flight " + flightId));
+        return toResponse(inv);
+    }
+
+    public List<SeatResponse> getAvailableSeats(String flightId) {
+        Map<String, SeatInventory> available = seatInventoryRepository
+                .findByFlightIdAndStatus(flightId, SeatStatus.AVAILABLE)
+                .stream()
+                .collect(Collectors.toMap(SeatInventory::getSeatId, inv -> inv));
+
+        return seatRepository.findAllById(available.keySet()).stream()
+                .sorted(Comparator.comparingInt(Seat::getRowNumber).thenComparing(Seat::getSeatNumber))
+                .map(s -> new SeatResponse(s.getId(), s.getSeatNumber(), available.get(s.getId()).getStatus()))
                 .toList();
     }
 
