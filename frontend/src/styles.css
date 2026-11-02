@@ -28,9 +28,10 @@
   --radius-sm: 10px;
   --topbar-h: 64px;
   --tabbar-h: 0px;
-  --seat: 38px;
-  --aisle: 22px;
-  --rowlabel: 26px;
+  --seat: 52px;
+  --aisle: 40px;
+  --rowlabel: 32px;
+  --seat-gap: 8px;
   color-scheme: light;
 }
 
@@ -1158,20 +1159,20 @@ dd {
   background: var(--border);
 }
 .cabin {
-  max-width: 100%;
-  max-height: 560px;
+  width: 100%;
+  max-height: 72vh;
   overflow: auto;
-  padding: 0 18px 18px;
+  padding: 0 24px 24px;
   border: 1px solid var(--border);
-  border-radius: 120px 120px 24px 24px;
+  border-radius: 160px 160px 28px 28px;
   background: var(--surface-2);
 }
 .cabin-nose {
-  height: 56px;
+  height: 72px;
 }
 .seat-grid {
   display: grid;
-  gap: 6px;
+  gap: var(--seat-gap);
   justify-content: center;
 }
 .seat-col-label,
@@ -1195,10 +1196,10 @@ dd {
   width: var(--seat);
   height: var(--seat);
   border: 1.5px solid var(--primary);
-  border-radius: 10px 10px 6px 6px;
+  border-radius: 12px 12px 7px 7px;
   background: var(--primary-soft);
   color: var(--on-primary);
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 800;
   cursor: pointer;
   transition: transform 0.08s, background 0.15s;
@@ -1493,6 +1494,7 @@ dd {
     --seat: 34px;
     --aisle: 16px;
     --rowlabel: 22px;
+    --seat-gap: 6px;
   }
   body {
     font-size: 14.5px;
@@ -1623,6 +1625,10 @@ dd {
   .cabin {
     max-height: none;
     padding: 0 10px 14px;
+    border-radius: 90px 90px 20px 20px;
+  }
+  .cabin-nose {
+    height: 40px;
   }
   .booking-list,
   .passenger-grid {
