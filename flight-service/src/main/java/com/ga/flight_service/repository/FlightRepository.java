@@ -1,4 +1,4 @@
-package com.ga.flight_service.service;
+package com.ga.flight_service.repository;
 
 import com.ga.flight_service.model.Flight;
 import org.springframework.data.mongodb.repository.MongoRepository;
