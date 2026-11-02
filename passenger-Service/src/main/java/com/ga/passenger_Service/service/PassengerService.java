@@ -17,7 +17,7 @@ public class PassengerService {
     public PassengerService(PassengerRepository passengerRepository) {
         this.passengerRepository = passengerRepository;
     }
-
+    // Creates a new passenger and links it to the user and saves it in MongoDB
     public PassengerResponse createPassenger(
             PassengerRequest request, String userId) {
 
@@ -33,18 +33,10 @@ public class PassengerService {
 
         Passenger savedPassenger = passengerRepository.save(passenger);
 
-        PassengerResponse response = new PassengerResponse();
-
-        response.setId(savedPassenger.getId());
-        response.setFirstName(savedPassenger.getFirstName());
-        response.setLastName(savedPassenger.getLastName());
-        response.setDateOfBirth(savedPassenger.getDateOfBirth());
-        response.setNationality(savedPassenger.getNationality());
-        response.setCreatedAt(savedPassenger.getCreatedAt());
-
-        return response;
+        return toResponse(savedPassenger);
     }
 
+    // Retrieves all passengers belonging to a specific user
     public List<PassengerResponse> getMyPassengers(String userId) {
 
         List<Passenger> passengers = passengerRepository.findByUserId(userId);
@@ -52,7 +44,54 @@ public class PassengerService {
         return passengers.stream().map(this::toResponse)
                 .toList();
     }
+    // Finds a passenger by ID and checks that the user owns the passenger
+    public PassengerResponse getPassengerById(String passengerId, String userId) {
 
+        Passenger passenger = passengerRepository.findById(passengerId)
+                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+
+        if (!passenger.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("Passenger not found");
+        }
+
+        return toResponse(passenger);
+    }
+    // Updates a passengers information after verifying ownership
+    public PassengerResponse updatePassenger(
+            String passengerId, PassengerRequest request, String userId) {
+
+        Passenger passenger = passengerRepository.findById(passengerId)
+                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+
+        if (!passenger.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("Passenger not found");
+        }
+
+        passenger.setFirstName(request.getFirstName());
+        passenger.setLastName(request.getLastName());
+        passenger.setDateOfBirth(request.getDateOfBirth());
+        passenger.setNationality(request.getNationality());
+        passenger.setPassportNumber(request.getPassportNumber());
+
+        Passenger updatedPassenger = passengerRepository.save(passenger);
+
+        return toResponse(updatedPassenger);
+    }
+    // Deletes a passenger only if the passenger belongs to the user
+    public void deletePassenger(String passengerId, String userId) {
+
+        Passenger passenger = passengerRepository.findById(passengerId)
+                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+
+        if (!passenger.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("Passenger not found");
+        }
+
+        passengerRepository.delete(passenger);
+    }
+
+
+    // Converts a Passenger model into a response without exposing the passport number
     private PassengerResponse toResponse(Passenger passenger) {
 
         PassengerResponse response = new PassengerResponse();
@@ -66,5 +105,6 @@ public class PassengerService {
 
         return response;
     }
+
 
 }
