@@ -1,8 +1,10 @@
 package com.ga.seat_service.controller;
 
+import com.ga.seat_service.models.dtos.request.ConfirmSeatRequest;
 import com.ga.seat_service.models.dtos.response.HoldResponse;
 import com.ga.seat_service.models.dtos.response.SeatResponse;
 import com.ga.seat_service.service.SeatService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +26,14 @@ public class SeatController {
     public ResponseEntity<HoldResponse> holdSeat(@PathVariable String flightId,
                                                  @PathVariable String seatId) {
         return ResponseEntity.ok(seatService.holdSeat(flightId, seatId));
+    }
+
+    @PostMapping("/flights/{flightId}/seats/{seatId}/confirm")
+    public ResponseEntity<SeatResponse> confirmSeat(@PathVariable String flightId,
+                                                    @PathVariable String seatId,
+                                                    @Valid @RequestBody ConfirmSeatRequest request) {
+        return ResponseEntity.ok(seatService.confirmSeat(flightId, seatId,
+                request.getHoldToken(), request.getBookingId()));
     }
 
     @GetMapping("/flights/{flightId}/seats/available")

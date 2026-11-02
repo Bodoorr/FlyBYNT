@@ -65,6 +65,27 @@ public class SeatService {
         return new HoldResponse(flightId, seatId, inv.getHoldToken(), inv.getHoldExpiresAt());
     }
 
+    public SeatResponse confirmSeat(String flightId, String seatId, String holdToken, String bookingId) {
+        SeatInventory inv = findInventory(flightId, seatId);
+
+        if (inv.getStatus() != SeatStatus.HELD) {
+            throw new SeatUnAvailableException("Seat " + seatId + " is not held");
+        }
+        if (!holdToken.equals(inv.getHoldToken())) {
+            throw new SeatUnAvailableException("Invalid hold token for seat " + seatId);
+        }
+        if (inv.getHoldExpiresAt().isBefore(Instant.now())) {
+            throw new SeatUnAvailableException("Hold on seat " + seatId + " has expired");
+        }
+
+        inv.setStatus(SeatStatus.BOOKED);
+        inv.setBookingId(bookingId);
+        inv.setHoldToken(null);
+        inv.setHoldExpiresAt(null);
+
+        return toResponse(seatInventoryRepository.save(inv));
+    }
+
     public SeatResponse getSeat(String flightId, String seatId) {
         return toResponse(findInventory(flightId, seatId));
     }
