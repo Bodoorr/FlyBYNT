@@ -8,4 +8,6 @@ import java.util.List;
 public interface SeatRepository extends MongoRepository<Seat,String> {
     List<Seat> findByAircraftIdOrderByRowNumberAscSeatNumberAsc(String aircraftId);
 
+    boolean existsByAircraftId(String aircraftId);
+
 }

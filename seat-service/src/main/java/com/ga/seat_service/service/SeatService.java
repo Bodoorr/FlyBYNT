@@ -1,10 +1,15 @@
 package com.ga.seat_service.service;
 
+import com.ga.seat_service.enums.SeatPosition;
 import com.ga.seat_service.enums.SeatStatus;
+import com.ga.seat_service.exceptions.InvalidSeatLayoutException;
 import com.ga.seat_service.exceptions.SeatNotFoundException;
 import com.ga.seat_service.exceptions.SeatUnAvailableException;
+import com.ga.seat_service.exceptions.SeatsAlreadyExistException;
 import com.ga.seat_service.models.Seat;
 import com.ga.seat_service.models.SeatInventory;
+import com.ga.seat_service.models.dtos.request.GenerateSeatsRequest;
+import com.ga.seat_service.models.dtos.request.SeatSectionRequest;
 import com.ga.seat_service.models.dtos.response.HoldResponse;
 import com.ga.seat_service.models.dtos.response.SeatResponse;
 import com.ga.seat_service.repository.SeatInventoryRepository;
@@ -14,9 +19,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -26,6 +34,58 @@ public class SeatService {
     private final SeatRepository seatRepository;
     private final SeatInventoryRepository seatInventoryRepository;
     private static final Duration HOLD_DURATION = Duration.ofMinutes(10);
+
+    // builds every seat for an aircraft from its sections, e.g. rows 1-3 "ACDF" -> 1A,1C,1D,1F,2A...
+    public List<Seat> generateSeats(String aircraftId, GenerateSeatsRequest request) {
+        if (seatRepository.existsByAircraftId(aircraftId)) {
+            throw new SeatsAlreadyExistException("Aircraft " + aircraftId + " already has seats");
+        }
+
+        List<Seat> seats = new ArrayList<>();
+        Set<String> seatNumbers = new HashSet<>();
+
+        for (SeatSectionRequest section : request.getSections()) {
+            if (section.getFromRow() > section.getToRow()) {
+                throw new InvalidSeatLayoutException("fromRow " + section.getFromRow()
+                        + " is after toRow " + section.getToRow());
+            }
+
+            String letters = section.getLetters().toUpperCase();
+            String windows = section.getWindowLetters().toUpperCase();
+            String aisles = section.getAisleLetters().toUpperCase();
+
+            for (int row = section.getFromRow(); row <= section.getToRow(); row++) {
+                for (char letter : letters.toCharArray()) {
+                    String seatNumber = row + String.valueOf(letter);
+
+                    // catches overlapping row ranges or repeated letters like "AAB"
+                    if (!seatNumbers.add(seatNumber)) {
+                        throw new InvalidSeatLayoutException("Seat " + seatNumber + " appears more than once");
+                    }
+
+                    seats.add(Seat.builder()
+                            .aircraftId(aircraftId)
+                            .seatNumber(seatNumber)
+                            .rowNumber(row)
+                            .seatClass(section.getSeatClass())
+                            .position(positionOf(letter, windows, aisles))
+                            .build());
+                }
+            }
+        }
+
+        return seatRepository.saveAll(seats);
+    }
+
+    private SeatPosition positionOf(char letter, String windowLetters, String aisleLetters) {
+        if (windowLetters.indexOf(letter) >= 0) {
+            return SeatPosition.WINDOW;
+        }
+        if (aisleLetters.indexOf(letter) >= 0) {
+            return SeatPosition.AISLE;
+        }
+        return SeatPosition.MIDDLE;
+    }
 
     public List<SeatResponse> getSeatsForFlight(String flightId , String aircraftId){
         List<Seat> seats = seatRepository.findByAircraftIdOrderByRowNumberAscSeatNumberAsc(aircraftId);

@@ -1,12 +1,15 @@
 package com.ga.seat_service.controller;
 
+import com.ga.seat_service.models.Seat;
 import com.ga.seat_service.models.dtos.request.ConfirmSeatRequest;
+import com.ga.seat_service.models.dtos.request.GenerateSeatsRequest;
 import com.ga.seat_service.models.dtos.request.ReleaseSeatRequest;
 import com.ga.seat_service.models.dtos.response.HoldResponse;
 import com.ga.seat_service.models.dtos.response.SeatResponse;
 import com.ga.seat_service.service.SeatService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +19,12 @@ import java.util.List;
 @RestController
 public class SeatController {
     private final SeatService seatService;
+
+    @PostMapping("/aircraft/{aircraftId}/seats/generate")
+    public ResponseEntity<List<Seat>> generateSeats(@PathVariable String aircraftId,
+                                                    @Valid @RequestBody GenerateSeatsRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(seatService.generateSeats(aircraftId, request));
+    }
 
     @GetMapping("/flights/{flightId}/seats")
     public ResponseEntity<List<SeatResponse>> getSeats(@PathVariable String flightId,

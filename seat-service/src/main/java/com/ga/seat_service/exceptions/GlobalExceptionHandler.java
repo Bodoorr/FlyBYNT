@@ -28,6 +28,18 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(409, ex.getMessage(), Instant.now()));
     }
 
+    @ExceptionHandler(SeatsAlreadyExistException.class)
+    public ResponseEntity<ErrorResponse> handleSeatsAlreadyExist(SeatsAlreadyExistException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(409, ex.getMessage(), Instant.now()));
+    }
+
+    @ExceptionHandler(InvalidSeatLayoutException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidLayout(InvalidSeatLayoutException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(400, ex.getMessage(), Instant.now()));
+    }
+
     // thrown by @Version when two requests update the same seat at the same time
     @ExceptionHandler(OptimisticLockingFailureException.class)
     public ResponseEntity<ErrorResponse> handleConcurrentUpdate(OptimisticLockingFailureException ex) {
