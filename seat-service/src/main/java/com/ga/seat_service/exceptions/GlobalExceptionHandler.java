@@ -1,43 +1,44 @@
 package com.ga.seat_service.exceptions;
 
+import com.ga.seat_service.models.dtos.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.time.Instant;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(SeatNotFoundException.class)
-    public ProblemDetail handleSeatNotFound(SeatNotFoundException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleSeatNotFound(SeatNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(404, ex.getMessage(), Instant.now()));
     }
 
     @ExceptionHandler(SeatUnAvailableException.class)
-    public ProblemDetail handleSeatUnavailable(SeatUnAvailableException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleSeatUnavailable(SeatUnAvailableException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(409, ex.getMessage(), Instant.now()));
     }
 
-    // @Valid failures, e.g. @NotBlank on SeatRequest
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new LinkedHashMap<>();
-        ex.getBindingResult().getFieldErrors()
-                .forEach(e -> errors.put(e.getField(), e.getDefaultMessage()));
+    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .collect(Collectors.joining(", "));
 
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
-        problem.setProperty("errors", errors);
-        return problem;
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(400, message, Instant.now()));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ProblemDetail handleMissingParam(MissingServletRequestParameterException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
-                "Missing required parameter: " + ex.getParameterName());
+    public ResponseEntity<ErrorResponse> handleMissingParam(MissingServletRequestParameterException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(400, "Missing required parameter: " + ex.getParameterName(), Instant.now()));
     }
 }
