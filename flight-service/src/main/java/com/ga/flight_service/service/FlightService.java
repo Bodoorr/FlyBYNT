@@ -14,6 +14,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +35,10 @@ public class FlightService {
 
     private final FlightRepository flightRepository;
 
+    private static final DateTimeFormatter AIRLABS_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final BigDecimal BASE_FARE = new BigDecimal("30");
+    private static final BigDecimal PER_MINUTE = new BigDecimal("0.25");
+
     //communicate with API
     private final RestClient restClient= RestClient.create();
 
@@ -35,7 +46,8 @@ public class FlightService {
         //send a get request
         AllFlightResponse result= restClient.get()
                 //AirLabs URL
-                .uri(apiUrl+"/flights?dep_iata={airport}&api_key={key}", departureAirport,apiKey)
+                // schedules (not live /flights) so upcoming flights come with departure/arrival times
+                .uri(apiUrl+"/schedules?dep_iata={airport}&api_key={key}", departureAirport,apiKey)
                 //Retrieve the HTTP response
                 .retrieve()
                 //read the JSON response as String
@@ -55,6 +67,9 @@ public class FlightService {
             Flight flight= flightRepository.findByFlightNumberAndDepartureIataCode(response.getFlightIata(), response.getDepIata()).orElseGet(Flight::new);
             flight.setFlightNumber(response.getFlightIata());
             flight.setStatus(response.getStatus());
+            flight.setDepartureTime(parseUtc(response.getDepTimeUtc()));
+            flight.setArrivalTime(parseUtc(response.getArrTimeUtc()));
+            flight.setPrice(priceFor(flight, response.getDuration()));
 
             Airport departure = new Airport();
             departure.setIataCode(response.getDepIata());
@@ -75,6 +90,26 @@ public class FlightService {
             flights.add(flightRepository.save(flight));
         }
         return flights;
+    }
+
+    // AirLabs gives UTC times as "yyyy-MM-dd HH:mm"
+    private static Instant parseUtc(String time){
+        if (time == null) {
+            return null;
+        }
+        return LocalDateTime.parse(time, AIRLABS_TIME).toInstant(ZoneOffset.UTC);
+    }
+
+    // AirLabs has no fares. Placeholder: base fare + per-minute rate until the team decides real pricing
+    private static BigDecimal priceFor(Flight flight, Integer durationMinutes){
+        Integer minutes = durationMinutes;
+        if (minutes == null && flight.getDepartureTime() != null && flight.getArrivalTime() != null) {
+            minutes = (int) Duration.between(flight.getDepartureTime(), flight.getArrivalTime()).toMinutes();
+        }
+        if (minutes == null) {
+            return null;
+        }
+        return BASE_FARE.add(PER_MINUTE.multiply(BigDecimal.valueOf(minutes))).setScale(2, RoundingMode.HALF_UP);
     }
 
     public Flight getFlightById(String id){

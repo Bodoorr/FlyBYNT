@@ -3,6 +3,9 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -19,6 +22,11 @@ public class Flight {
     private Airline airline;
     private Aircraft aircraft;
     private String status;
+
+    // scheduled times in UTC, and the ticket price (read by booking-service)
+    private Instant departureTime;
+    private Instant arrivalTime;
+    private BigDecimal price;
 
 }
 

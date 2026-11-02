@@ -17,4 +17,8 @@ public class FlightResponse {
     private String airlineIata;
     private String aircraftIcao;
     private String status;
+    // from AirLabs /schedules, e.g. "2026-11-02 11:25" (UTC)
+    private String depTimeUtc;
+    private String arrTimeUtc;
+    private Integer duration; // minutes
 }

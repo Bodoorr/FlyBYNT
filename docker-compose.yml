@@ -1,0 +1,97 @@
+
+x-jwt: &jwt
+  JWT_SECRET: ${JWT_SECRET:-C6UlILsE6GJwNqwCTkkvJj9O653yJUoteWMLfYyrc3vaGrrTOrJFAUD1wEBnnposzcQl}
+
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - "27018:27017"
+    volumes:
+      - flybynt-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "8085:8085"
+    environment:
+      <<: *jwt
+      MONGODB_URI: mongodb://mongo:27017/auth_service
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  flight-service:
+    build: ./flight-service
+    ports:
+      - "8081:8081"
+    environment:
+      <<: *jwt
+      MONGODB_URI: mongodb://mongo:27017
+      AIRLABS_API_KEY: ${AIRLABS_API_KEY:?set AIRLABS_API_KEY in .env}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  seat-service:
+    build: ./seat-service
+    ports:
+      - "8082:8082"
+    environment:
+      <<: *jwt
+      MONGODB_URI: mongodb://mongo:27017/seat_service
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  passenger-service:
+    build: ./passenger-Service
+    ports:
+      - "8084:8084"
+    environment:
+      <<: *jwt
+      MONGODB_URI: mongodb://mongo:27017
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  booking-service:
+    build: ./booking-service
+    ports:
+      - "8083:8083"
+    environment:
+      <<: *jwt
+      MONGODB_URI: mongodb://mongo:27017/tripsync_booking
+      # inside Docker, services reach each other by service name, not localhost
+      FLIGHT_SERVICE_URL: http://flight-service:8081
+      SEAT_SERVICE_URL: http://seat-service:8082
+      PASSENGER_SERVICE_URL: http://passenger-service:8084
+    depends_on:
+      mongo:
+        condition: service_healthy
+      flight-service:
+        condition: service_started
+      seat-service:
+        condition: service_started
+      passenger-service:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    # open http://localhost:3000
+    ports:
+      - "3000:80"
+    depends_on:
+      - auth-service
+      - flight-service
+      - seat-service
+      - passenger-service
+      - booking-service
+
+volumes:
+  flybynt-mongo-data:

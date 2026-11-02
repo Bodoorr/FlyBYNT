@@ -15,7 +15,7 @@ public class GlobalExceptionHandler {
     // Returns 404 when a passenger is not found or does not belong to the user
     @ExceptionHandler(PassengerNotFoundException.class)
     public ResponseEntity<Map<String, String>> handlePassengerNotFound(
-            IllegalArgumentException ex) {
+            PassengerNotFoundException ex) {
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of("message", ex.getMessage()));

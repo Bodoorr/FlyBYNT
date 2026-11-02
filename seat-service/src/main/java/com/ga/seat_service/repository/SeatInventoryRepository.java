@@ -17,4 +17,6 @@ public interface SeatInventoryRepository extends MongoRepository<SeatInventory, 
     List<SeatInventory> findByFlightIdAndStatus(String flightId, SeatStatus status);
 
     List<SeatInventory> findByBookingIdAndStatus(String bookingId, SeatStatus status);
+
+    Optional<SeatInventory> findByHoldToken(String holdToken);
 }
