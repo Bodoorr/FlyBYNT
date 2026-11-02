@@ -1,6 +1,7 @@
 package com.ga.flight_service.service;
 
 import com.ga.flight_service.model.Flight;
+import com.ga.flight_service.model.response.AllFlightResponse;
 import com.ga.flight_service.repository.FlightRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,7 +26,7 @@ public class FlightService {
     //communicate with API
     private final RestClient restClient= RestClient.create();
 
-    public String getFlights(String departureAirport){
+    public AllFlightResponse getFlights(String departureAirport){
         //send a get request
         return restClient.get()
                 //AirLabs URL
@@ -31,7 +34,7 @@ public class FlightService {
                 //Retrieve the HTTP response
                 .retrieve()
                 //read the JSON response as String
-                .body(String.class);
+                .body(AllFlightResponse.class);
     }
 
     public Flight getFlightById(String id){

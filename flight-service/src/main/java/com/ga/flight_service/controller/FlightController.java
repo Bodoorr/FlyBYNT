@@ -1,6 +1,7 @@
 package com.ga.flight_service.controller;
 
 import com.ga.flight_service.model.Flight;
+import com.ga.flight_service.model.response.AllFlightResponse;
 import com.ga.flight_service.service.FlightService;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -12,7 +13,7 @@ public class FlightController {
     private final FlightService flightService;
 
     @GetMapping
-    public String getFlights(@RequestParam String departure){
+    public AllFlightResponse getFlights(@RequestParam String departure){
         return flightService.getFlights(departure);
     }
 
