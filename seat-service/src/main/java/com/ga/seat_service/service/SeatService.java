@@ -65,9 +65,6 @@ public class SeatService {
         return new HoldResponse(flightId, seatId, inv.getHoldToken(), inv.getHoldExpiresAt());
     }
 
-
-
-
     public SeatResponse getSeat(String flightId, String seatId) {
         return toResponse(findInventory(flightId, seatId));
     }
