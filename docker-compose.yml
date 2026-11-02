@@ -85,5 +85,17 @@ services:
       passenger-service:
         condition: service_started
 
+  frontend:
+    build: ./frontend
+    # open http://localhost:3000
+    ports:
+      - "3000:80"
+    depends_on:
+      - auth-service
+      - flight-service
+      - seat-service
+      - passenger-service
+      - booking-service
+
 volumes:
   flybynt-mongo-data:

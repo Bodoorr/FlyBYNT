@@ -10,6 +10,7 @@ Flight booking microservices: auth, flight, seat, passenger and booking, sharing
 | passenger-service | 8084 |
 | auth-service | 8085 |
 | MongoDB (Docker) | 27018 on the host |
+| **Web app** | **http://localhost:3000** |
 
 ## Run everything with Docker
 
@@ -22,7 +23,17 @@ Flight booking microservices: auth, flight, seat, passenger and booking, sharing
    ```
    docker compose up -d --build
    ```
-3. Logs: `docker compose logs -f booking-service`. Stop: `docker compose down` (add `-v` to also wipe the database).
+3. Open **http://localhost:3000**, register, and book. On a fresh database the seat page offers "Set up seat map" once.
+4. Logs: `docker compose logs -f booking-service`. Stop: `docker compose down` (add `-v` to also wipe the database).
+
+## Frontend development
+
+With the services running (Docker or IntelliJ):
+```
+cd frontend
+npm install
+npm run dev        # http://localhost:5173, hot reload; /api is proxied to the services
+```
 
 ## Try it
 
