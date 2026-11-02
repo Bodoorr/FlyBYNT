@@ -2,6 +2,7 @@ package com.flybynt.booking_service.client;
 
 import com.flybynt.booking_service.dto.*;
 import com.flybynt.booking_service.exception.ApiException;
+import com.flybynt.booking_service.security.ServiceTokenProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -10,8 +11,10 @@ import org.springframework.web.client.RestClient;
 @Component
 public class SeatClient {
     private final RestClient http;
-    public SeatClient(RestClient.Builder builder, @Value("${tripsync.seat-url}") String url){
+    private final ServiceTokenProvider serviceTokens;
+    public SeatClient(RestClient.Builder builder, @Value("${tripsync.seat-url}") String url,ServiceTokenProvider serviceTokens){
         http=builder.baseUrl(url).build();
+        this.serviceTokens=serviceTokens;
     }
 
     /** Atomically holds AVAILABLE -> HELD for bookingId. Retrying with the same bookingId returns the same hold. */
@@ -50,8 +53,8 @@ public class SeatClient {
         return response==null?null:response.seatStatus();
     }
 
-    // the reconciler runs without a caller, so there is no token to forward
-    private static void auth(HttpHeaders h,String token){
-        if(token!=null)h.setBearerAuth(token);
+    // forward the caller's token; the reconciler has no caller, so it uses this service's own token
+    private void auth(HttpHeaders h,String token){
+        h.setBearerAuth(token!=null?token:serviceTokens.token());
     }
 }

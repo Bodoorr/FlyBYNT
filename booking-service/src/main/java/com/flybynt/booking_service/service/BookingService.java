@@ -55,7 +55,7 @@ public class BookingService {
                 return BookingResponse.from(b);
             }
             passengers.verify(req.passengerId(),userId,token);
-            FlightResponse flight=flights.get(req.flightId());
+            FlightResponse flight=flights.get(req.flightId(),token);
             if(flight.departureTime()==null||flight.arrivalTime()==null||flight.price()==null||
                     !flight.departureTime().isBefore(flight.arrivalTime()) || !flight.departureTime().isAfter(Instant.now()))
                 throw new ApiException(HttpStatus.BAD_REQUEST,"Invalid or departed flight");

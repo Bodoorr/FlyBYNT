@@ -24,6 +24,7 @@ public class JWTUtils {
         return Jwts.builder()
                 .setSubject(myUserDetails.getUsername())
                 .claim("userId", myUserDetails.getUser().getId())
+                .claim("role", "USER")
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(
                         System.currentTimeMillis() + jwtExpirationMs))

@@ -14,8 +14,9 @@ public class FlightClient {
     }
 
     /** TODO(team): confirm path /flights/{id} and response schema. */
-    public FlightResponse get(String id){
-        FlightResponse f=http.get().uri("/flights/{id}",id).retrieve().body(FlightResponse.class);
+    public FlightResponse get(String id,String token){
+        FlightResponse f=http.get().uri("/flights/{id}",id)
+                .headers(h->h.setBearerAuth(token)).retrieve().body(FlightResponse.class);
 
         if(f==null)
             throw new ApiException(HttpStatus.BAD_GATEWAY,"Empty flight response");return f;
