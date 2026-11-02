@@ -8,7 +8,6 @@ import com.ga.seat_service.models.dtos.response.SeatResponse;
 import com.ga.seat_service.repository.SeatInventoryRepository;
 import com.ga.seat_service.repository.SeatRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -21,7 +20,6 @@ import java.util.stream.Collectors;
 public class SeatService {
     private final SeatRepository seatRepository;
     private final SeatInventoryRepository seatInventoryRepository;
-    private final MongoTemplate mongoTemplate;
 
     public List<SeatResponse> getSeatsForFlight(String flightId , String aircraftId){
         List<Seat> seats = seatRepository.findByAircraftIdOrderByRowNumberAscSeatNumberAsc(aircraftId);
@@ -47,10 +45,10 @@ public class SeatService {
     }
 
 
+
+
     public SeatResponse getSeat(String flightId, String seatId) {
-        SeatInventory inv = seatInventoryRepository.findByFlightIdAndSeatId(flightId, seatId)
-                .orElseThrow(() -> new SeatNotFoundException("Seat " + seatId + " not found on flight " + flightId));
-        return toResponse(inv);
+        return toResponse(findInventory(flightId, seatId));
     }
 
     public List<SeatResponse> getAvailableSeats(String flightId) {
@@ -65,6 +63,12 @@ public class SeatService {
                 .toList();
     }
 
+
+
+    private SeatInventory findInventory(String flightId, String seatId) {
+        return seatInventoryRepository.findByFlightIdAndSeatId(flightId, seatId)
+                .orElseThrow(() -> new SeatNotFoundException("Seat " + seatId + " not found on flight " + flightId));
+    }
 
     private SeatResponse toResponse(SeatInventory inv) {
         Seat seat = seatRepository.findById(inv.getSeatId())

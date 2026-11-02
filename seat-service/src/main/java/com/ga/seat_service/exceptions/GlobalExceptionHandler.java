@@ -1,6 +1,5 @@
 package com.ga.seat_service.exceptions;
 
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -22,13 +21,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SeatUnAvailableException.class)
     public ProblemDetail handleSeatUnavailable(SeatUnAvailableException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
-    }
-
-    // thrown by @Version when two requests update the same seat at the same time
-    @ExceptionHandler(OptimisticLockingFailureException.class)
-    public ProblemDetail handleConcurrentUpdate(OptimisticLockingFailureException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
-                "Seat was updated by another request, please try again");
     }
 
     // @Valid failures, e.g. @NotBlank on SeatRequest
