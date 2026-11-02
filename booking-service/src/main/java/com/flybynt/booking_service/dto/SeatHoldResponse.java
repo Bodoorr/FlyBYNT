@@ -1,3 +1,3 @@
 package com.flybynt.booking_service.dto;
 
-public record SeatHoldResponse(boolean held,String holdId) {}
+public record SeatHoldResponse(boolean held,String holdToken) {}

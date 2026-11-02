@@ -15,7 +15,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 })
 public class Booking {
     @Id public String id;
-    public String bookingReference, idempotencyKey, userId, passengerId, flightId, seatId, holdId;
+    public String bookingReference, idempotencyKey, userId, passengerId, flightId, seatId, holdToken;
     public Instant departureTime, arrivalTime, createdAt, updatedAt;
     public BigDecimal totalPrice;
     public BookingStatus status;
