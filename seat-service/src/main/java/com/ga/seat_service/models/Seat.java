@@ -29,5 +29,4 @@ public class Seat {
 
     private SeatPosition position;
 
-
 }
