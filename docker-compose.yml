@@ -1,14 +1,10 @@
-# Runs MongoDB and all five services:  docker compose up --build
-# Secrets come from .env (copy .env.example); nothing secret is written here.
 
 x-jwt: &jwt
-  # Base64 HS256 key shared by every service; override in .env for anything real
   JWT_SECRET: ${JWT_SECRET:-C6UlILsE6GJwNqwCTkkvJj9O653yJUoteWMLfYyrc3vaGrrTOrJFAUD1wEBnnposzcQl}
 
 services:
   mongo:
     image: mongo:7
-    # 27018 on the host so it doesn't clash with a local MongoDB on 27017
     ports:
       - "27018:27017"
     volumes:
