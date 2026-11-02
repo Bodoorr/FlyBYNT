@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/FlyBYNT.iml" filepath="$PROJECT_DIR$/.idea/FlyBYNT.iml" />
-      <module fileurl="file://$PROJECT_DIR$/flight-service/flight-service.iml" filepath="$PROJECT_DIR$/flight-service/flight-service.iml" />
     </modules>
   </component>
 </project>
