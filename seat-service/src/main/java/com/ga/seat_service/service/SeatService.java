@@ -2,17 +2,22 @@ package com.ga.seat_service.service;
 
 import com.ga.seat_service.enums.SeatStatus;
 import com.ga.seat_service.exceptions.SeatNotFoundException;
+import com.ga.seat_service.exceptions.SeatUnAvailableException;
 import com.ga.seat_service.models.Seat;
 import com.ga.seat_service.models.SeatInventory;
+import com.ga.seat_service.models.dtos.response.HoldResponse;
 import com.ga.seat_service.models.dtos.response.SeatResponse;
 import com.ga.seat_service.repository.SeatInventoryRepository;
 import com.ga.seat_service.repository.SeatRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -20,6 +25,7 @@ import java.util.stream.Collectors;
 public class SeatService {
     private final SeatRepository seatRepository;
     private final SeatInventoryRepository seatInventoryRepository;
+    private static final Duration HOLD_DURATION = Duration.ofMinutes(10);
 
     public List<SeatResponse> getSeatsForFlight(String flightId , String aircraftId){
         List<Seat> seats = seatRepository.findByAircraftIdOrderByRowNumberAscSeatNumberAsc(aircraftId);
@@ -42,6 +48,21 @@ public class SeatService {
         return seats.stream()
                 .map(s -> new SeatResponse(s.getId(), s.getSeatNumber(), statusMap.get(s.getId())))
                 .toList();
+    }
+
+    public HoldResponse holdSeat(String flightId, String seatId) {
+        SeatInventory inv = findInventory(flightId, seatId);
+
+        if (inv.getStatus() != SeatStatus.AVAILABLE) {
+            throw new SeatUnAvailableException("Seat " + seatId + " is not available");
+        }
+
+        inv.setStatus(SeatStatus.HELD);
+        inv.setHoldToken(UUID.randomUUID().toString());
+        inv.setHoldExpiresAt(Instant.now().plus(HOLD_DURATION));
+        seatInventoryRepository.save(inv);
+
+        return new HoldResponse(flightId, seatId, inv.getHoldToken(), inv.getHoldExpiresAt());
     }
 
 
