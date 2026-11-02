@@ -6,6 +6,8 @@ import com.ga.flight_service.service.FlightService;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping(path = "/flights")
 @AllArgsConstructor
@@ -13,7 +15,7 @@ public class FlightController {
     private final FlightService flightService;
 
     @GetMapping
-    public AllFlightResponse getFlights(@RequestParam String departure){
+    public List<Flight> getFlights(@RequestParam String departure){
         return flightService.getFlights(departure);
     }
 
