@@ -1,6 +1,7 @@
 package com.ga.seat_service.controller;
 
 import com.ga.seat_service.models.dtos.request.ConfirmSeatRequest;
+import com.ga.seat_service.models.dtos.request.ReleaseSeatRequest;
 import com.ga.seat_service.models.dtos.response.HoldResponse;
 import com.ga.seat_service.models.dtos.response.SeatResponse;
 import com.ga.seat_service.service.SeatService;
@@ -34,6 +35,13 @@ public class SeatController {
                                                     @Valid @RequestBody ConfirmSeatRequest request) {
         return ResponseEntity.ok(seatService.confirmSeat(flightId, seatId,
                 request.getHoldToken(), request.getBookingId()));
+    }
+
+    @PostMapping("/flights/{flightId}/seats/{seatId}/release")
+    public ResponseEntity<SeatResponse> releaseSeat(@PathVariable String flightId,
+                                                    @PathVariable String seatId,
+                                                    @Valid @RequestBody ReleaseSeatRequest request) {
+        return ResponseEntity.ok(seatService.releaseSeat(flightId, seatId, request.getHoldToken()));
     }
 
     @GetMapping("/flights/{flightId}/seats/available")

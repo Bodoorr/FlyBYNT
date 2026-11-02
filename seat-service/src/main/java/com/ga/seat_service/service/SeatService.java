@@ -53,7 +53,7 @@ public class SeatService {
     public HoldResponse holdSeat(String flightId, String seatId) {
         SeatInventory inv = findInventory(flightId, seatId);
 
-        if (inv.getStatus() != SeatStatus.AVAILABLE) {
+        if (!isFree(inv)) {
             throw new SeatUnAvailableException("Seat " + seatId + " is not available");
         }
 
@@ -74,12 +74,29 @@ public class SeatService {
         if (!holdToken.equals(inv.getHoldToken())) {
             throw new SeatUnAvailableException("Invalid hold token for seat " + seatId);
         }
-        if (inv.getHoldExpiresAt().isBefore(Instant.now())) {
+        if (isExpired(inv)) {
             throw new SeatUnAvailableException("Hold on seat " + seatId + " has expired");
         }
 
         inv.setStatus(SeatStatus.BOOKED);
         inv.setBookingId(bookingId);
+        inv.setHoldToken(null);
+        inv.setHoldExpiresAt(null);
+
+        return toResponse(seatInventoryRepository.save(inv));
+    }
+
+    public SeatResponse releaseSeat(String flightId, String seatId, String holdToken) {
+        SeatInventory inv = findInventory(flightId, seatId);
+
+        if (inv.getStatus() != SeatStatus.HELD) {
+            throw new SeatUnAvailableException("Seat " + seatId + " is not held");
+        }
+        if (!holdToken.equals(inv.getHoldToken())) {
+            throw new SeatUnAvailableException("Invalid hold token for seat " + seatId);
+        }
+
+        inv.setStatus(SeatStatus.AVAILABLE);
         inv.setHoldToken(null);
         inv.setHoldExpiresAt(null);
 
@@ -103,6 +120,16 @@ public class SeatService {
     }
 
 
+
+    private boolean isExpired(SeatInventory inv) {
+        return inv.getHoldExpiresAt() != null && inv.getHoldExpiresAt().isBefore(Instant.now());
+    }
+
+    // a seat is free if it's AVAILABLE, or HELD but the hold time has run out
+    private boolean isFree(SeatInventory inv) {
+        return inv.getStatus() == SeatStatus.AVAILABLE
+                || (inv.getStatus() == SeatStatus.HELD && isExpired(inv));
+    }
 
     private SeatInventory findInventory(String flightId, String seatId) {
         return seatInventoryRepository.findByFlightIdAndSeatId(flightId, seatId)
