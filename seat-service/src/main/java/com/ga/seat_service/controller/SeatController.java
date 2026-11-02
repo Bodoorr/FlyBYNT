@@ -44,6 +44,11 @@ public class SeatController {
         return ResponseEntity.ok(seatService.releaseSeat(flightId, seatId, request.getHoldToken()));
     }
 
+    @PostMapping("/seats/cancel/{bookingId}")
+    public ResponseEntity<List<SeatResponse>> cancelBooking(@PathVariable String bookingId) {
+        return ResponseEntity.ok(seatService.cancelBooking(bookingId));
+    }
+
     @GetMapping("/flights/{flightId}/seats/available")
     public ResponseEntity<List<SeatResponse>> getAvailableSeats(@PathVariable String flightId) {
         return ResponseEntity.ok(seatService.getAvailableSeats(flightId));

@@ -43,7 +43,7 @@ public class SeatService {
         }
         Map<String, SeatStatus> statusMap = seatInventoryRepository.findByFlightId(flightId)
                 .stream()
-                .collect(Collectors.toMap(SeatInventory::getSeatId, SeatInventory::getStatus));
+                .collect(Collectors.toMap(SeatInventory::getSeatId, this::displayStatus));
 
         return seats.stream()
                 .map(s -> new SeatResponse(s.getId(), s.getSeatNumber(), statusMap.get(s.getId())))
@@ -103,19 +103,37 @@ public class SeatService {
         return toResponse(seatInventoryRepository.save(inv));
     }
 
+    // a booking can have several seats, so free all of them
+    public List<SeatResponse> cancelBooking(String bookingId) {
+        List<SeatInventory> booked = seatInventoryRepository.findByBookingIdAndStatus(bookingId, SeatStatus.BOOKED);
+        if (booked.isEmpty()) {
+            throw new SeatNotFoundException("No booked seats for booking " + bookingId);
+        }
+
+        for (SeatInventory inv : booked) {
+            inv.setStatus(SeatStatus.AVAILABLE);
+            inv.setBookingId(null);
+        }
+
+        return seatInventoryRepository.saveAll(booked).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public SeatResponse getSeat(String flightId, String seatId) {
         return toResponse(findInventory(flightId, seatId));
     }
 
     public List<SeatResponse> getAvailableSeats(String flightId) {
         Map<String, SeatInventory> available = seatInventoryRepository
-                .findByFlightIdAndStatus(flightId, SeatStatus.AVAILABLE)
+                .findByFlightId(flightId)
                 .stream()
+                .filter(this::isFree)
                 .collect(Collectors.toMap(SeatInventory::getSeatId, inv -> inv));
 
         return seatRepository.findAllById(available.keySet()).stream()
                 .sorted(Comparator.comparingInt(Seat::getRowNumber).thenComparing(Seat::getSeatNumber))
-                .map(s -> new SeatResponse(s.getId(), s.getSeatNumber(), available.get(s.getId()).getStatus()))
+                .map(s -> new SeatResponse(s.getId(), s.getSeatNumber(), displayStatus(available.get(s.getId()))))
                 .toList();
     }
 
@@ -131,6 +149,11 @@ public class SeatService {
                 || (inv.getStatus() == SeatStatus.HELD && isExpired(inv));
     }
 
+    // what the user should see: an expired hold shows as AVAILABLE
+    private SeatStatus displayStatus(SeatInventory inv) {
+        return isFree(inv) ? SeatStatus.AVAILABLE : inv.getStatus();
+    }
+
     private SeatInventory findInventory(String flightId, String seatId) {
         return seatInventoryRepository.findByFlightIdAndSeatId(flightId, seatId)
                 .orElseThrow(() -> new SeatNotFoundException("Seat " + seatId + " not found on flight " + flightId));
@@ -139,7 +162,7 @@ public class SeatService {
     private SeatResponse toResponse(SeatInventory inv) {
         Seat seat = seatRepository.findById(inv.getSeatId())
                 .orElseThrow(() -> new SeatNotFoundException("Seat not found"));
-        return new SeatResponse(seat.getId(), seat.getSeatNumber(), inv.getStatus());
+        return new SeatResponse(seat.getId(), seat.getSeatNumber(), displayStatus(inv));
     }
 
 }
