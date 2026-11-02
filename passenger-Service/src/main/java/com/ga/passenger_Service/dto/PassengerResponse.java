@@ -1,7 +1,7 @@
 package com.ga.passenger_Service.dto;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class PassengerResponse {
 
@@ -10,7 +10,7 @@ public class PassengerResponse {
     private String lastName;
     private LocalDate dateOfBirth;
     private String nationality;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     public PassengerResponse() {
     }
@@ -55,11 +55,11 @@ public class PassengerResponse {
         this.nationality = nationality;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 }

@@ -11,6 +11,9 @@ public class PassengerRequest {
     @NotBlank(message = "Last name is required")
     private String lastName;
 
+    @NotBlank(message = "Passport number is required")
+    private String passportNumber;
+
     private LocalDate dateOfBirth;
     private String nationality;
 
@@ -47,5 +50,13 @@ public class PassengerRequest {
 
     public void setNationality(String nationality) {
         this.nationality = nationality;
+    }
+
+    public String getPassportNumber() {
+        return passportNumber;
+    }
+
+    public void setPassportNumber(String passportNumber) {
+        this.passportNumber = passportNumber;
     }
 }
