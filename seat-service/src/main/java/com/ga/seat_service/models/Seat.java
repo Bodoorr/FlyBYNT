@@ -16,7 +16,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @AllArgsConstructor
 @Document(collection = "seats")
 @CompoundIndex(name = "aircraft_seat_unique", def = "{'aircraftId': 1, 'seatNumber': 1}", unique = true)
-
 public class Seat {
 
     @Id
@@ -31,5 +30,4 @@ public class Seat {
     private SeatClass seatClass;
 
     private SeatPosition position;
-
 }
