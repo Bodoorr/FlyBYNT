@@ -2,6 +2,7 @@ package com.ga.passenger_Service.service;
 
 import com.ga.passenger_Service.dto.PassengerRequest;
 import com.ga.passenger_Service.dto.PassengerResponse;
+import com.ga.passenger_Service.exception.PassengerNotFoundException;
 import com.ga.passenger_Service.model.Passenger;
 import com.ga.passenger_Service.repository.PassengerRepository;
 import org.springframework.stereotype.Service;
@@ -48,10 +49,10 @@ public class PassengerService {
     public PassengerResponse getPassengerById(String passengerId, String userId) {
 
         Passenger passenger = passengerRepository.findById(passengerId)
-                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+                .orElseThrow(() -> new PassengerNotFoundException("Passenger not found"));
 
         if (!passenger.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Passenger not found");
+            throw new PassengerNotFoundException("Passenger not found");
         }
 
         return toResponse(passenger);
@@ -61,10 +62,10 @@ public class PassengerService {
             String passengerId, PassengerRequest request, String userId) {
 
         Passenger passenger = passengerRepository.findById(passengerId)
-                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+                .orElseThrow(() -> new PassengerNotFoundException("Passenger not found"));
 
         if (!passenger.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Passenger not found");
+            throw new PassengerNotFoundException("Passenger not found");
         }
 
         passenger.setFirstName(request.getFirstName());
@@ -81,10 +82,10 @@ public class PassengerService {
     public void deletePassenger(String passengerId, String userId) {
 
         Passenger passenger = passengerRepository.findById(passengerId)
-                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+                .orElseThrow(() -> new PassengerNotFoundException("Passenger not found"));
 
         if (!passenger.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Passenger not found");
+            throw new PassengerNotFoundException("Passenger not found");
         }
 
         passengerRepository.delete(passenger);

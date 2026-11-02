@@ -13,7 +13,7 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     // Returns 404 when a passenger is not found or does not belong to the user
-    @ExceptionHandler(IllegalArgumentException.class)
+    @ExceptionHandler(PassengerNotFoundException.class)
     public ResponseEntity<Map<String, String>> handlePassengerNotFound(
             IllegalArgumentException ex) {
 

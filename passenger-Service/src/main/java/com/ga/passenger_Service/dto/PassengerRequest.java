@@ -1,6 +1,8 @@
 package com.ga.passenger_Service.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDate;
 
 public class PassengerRequest {
@@ -14,7 +16,10 @@ public class PassengerRequest {
     @NotBlank(message = "Passport number is required")
     private String passportNumber;
 
+    @NotNull(message = "Date of birth is required")
     private LocalDate dateOfBirth;
+
+    @NotBlank(message = "Nationality is required")
     private String nationality;
 
     public PassengerRequest() {
