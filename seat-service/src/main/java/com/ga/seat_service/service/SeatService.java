@@ -10,11 +10,13 @@ import com.ga.seat_service.models.Seat;
 import com.ga.seat_service.models.SeatInventory;
 import com.ga.seat_service.models.dtos.request.GenerateSeatsRequest;
 import com.ga.seat_service.models.dtos.request.SeatSectionRequest;
+import com.ga.seat_service.models.dtos.response.BookingHoldResponse;
 import com.ga.seat_service.models.dtos.response.HoldResponse;
 import com.ga.seat_service.models.dtos.response.SeatResponse;
 import com.ga.seat_service.repository.SeatInventoryRepository;
 import com.ga.seat_service.repository.SeatRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -24,6 +26,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -92,17 +95,17 @@ public class SeatService {
         if (seats.isEmpty()) {
             throw new SeatNotFoundException("No seats for aircraft " + aircraftId);
         }
-        if (!seatInventoryRepository.existsByFlightId(flightId)) {
-            for (Seat seat : seats) {
-                SeatInventory inv = new SeatInventory();
-                inv.setFlightId(flightId);
-                inv.setSeatId(seat.getId());
-                inv.setStatus(SeatStatus.AVAILABLE);
-                seatInventoryRepository.save(inv);
+        // booking holds can create single rows, so fill in only the seats that have none yet
+        Map<String, SeatInventory> inventory = seatInventoryRepository.findByFlightId(flightId)
+                .stream()
+                .collect(Collectors.toMap(SeatInventory::getSeatId, inv -> inv));
+        for (Seat seat : seats) {
+            if (!inventory.containsKey(seat.getId())) {
+                inventory.put(seat.getId(), findOrCreateInventory(flightId, seat.getId()));
             }
         }
-        Map<String, SeatStatus> statusMap = seatInventoryRepository.findByFlightId(flightId)
-                .stream()
+
+        Map<String, SeatStatus> statusMap = inventory.values().stream()
                 .collect(Collectors.toMap(SeatInventory::getSeatId, this::displayStatus));
 
         return seats.stream()
@@ -180,6 +183,67 @@ public class SeatService {
                 .toList();
     }
 
+    // ---- used by booking-service: the hold is identified by its holdToken ----
+
+    public BookingHoldResponse holdForBooking(String flightId, String seatId, String bookingId) {
+        SeatInventory inv = findOrCreateInventory(flightId, seatId);
+
+        // retry of the same request: hand back the hold this booking already has
+        if (inv.getStatus() == SeatStatus.HELD && !isExpired(inv) && bookingId.equals(inv.getBookingId())) {
+            return new BookingHoldResponse(true, inv.getHoldToken(), inv.getHoldExpiresAt());
+        }
+
+        if (!isFree(inv)) {
+            throw new SeatUnAvailableException("Seat " + seatId + " is not available");
+        }
+
+        inv.setStatus(SeatStatus.HELD);
+        inv.setBookingId(bookingId);
+        inv.setHoldToken(UUID.randomUUID().toString());
+        inv.setHoldExpiresAt(Instant.now().plus(HOLD_DURATION));
+        seatInventoryRepository.save(inv);
+
+        return new BookingHoldResponse(true, inv.getHoldToken(), inv.getHoldExpiresAt());
+    }
+
+    // safe to call twice: confirming an already BOOKED hold just returns it
+    public SeatResponse confirmHold(String holdToken) {
+        SeatInventory inv = findByHoldToken(holdToken);
+
+        if (inv.getStatus() == SeatStatus.BOOKED) {
+            return toResponse(inv);
+        }
+        if (inv.getStatus() != SeatStatus.HELD || isExpired(inv)) {
+            throw new SeatUnAvailableException("Hold " + holdToken + " has expired or is no longer valid");
+        }
+
+        // holdToken is kept on BOOKED seats so a retried confirm still finds it
+        inv.setStatus(SeatStatus.BOOKED);
+        inv.setHoldExpiresAt(null);
+        return toResponse(seatInventoryRepository.save(inv));
+    }
+
+    public SeatResponse releaseHold(String holdToken) {
+        SeatInventory inv = findByHoldToken(holdToken);
+
+        if (inv.getStatus() == SeatStatus.BOOKED) {
+            throw new SeatUnAvailableException("Seat is already booked, cancel the booking instead");
+        }
+
+        makeAvailable(inv);
+        return toResponse(seatInventoryRepository.save(inv));
+    }
+
+    // safe to call twice: a booking with nothing left to cancel returns an empty list
+    public List<SeatResponse> cancelBookingSeats(String bookingId) {
+        List<SeatInventory> booked = seatInventoryRepository.findByBookingIdAndStatus(bookingId, SeatStatus.BOOKED);
+
+        booked.forEach(this::makeAvailable);
+        return seatInventoryRepository.saveAll(booked).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public SeatResponse getSeat(String flightId, String seatId) {
         return toResponse(findInventory(flightId, seatId));
     }
@@ -212,6 +276,40 @@ public class SeatService {
     // what the user should see: an expired hold shows as AVAILABLE
     private SeatStatus displayStatus(SeatInventory inv) {
         return isFree(inv) ? SeatStatus.AVAILABLE : inv.getStatus();
+    }
+
+    private void makeAvailable(SeatInventory inv) {
+        inv.setStatus(SeatStatus.AVAILABLE);
+        inv.setBookingId(null);
+        inv.setHoldToken(null);
+        inv.setHoldExpiresAt(null);
+    }
+
+    private SeatInventory findByHoldToken(String holdToken) {
+        return seatInventoryRepository.findByHoldToken(holdToken)
+                .orElseThrow(() -> new SeatNotFoundException("Hold " + holdToken + " not found"));
+    }
+
+    // booking-service never opens the seat map, so the flight's inventory row may not exist yet
+    private SeatInventory findOrCreateInventory(String flightId, String seatId) {
+        Optional<SeatInventory> existing = seatInventoryRepository.findByFlightIdAndSeatId(flightId, seatId);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        Seat seat = seatRepository.findById(seatId)
+                .orElseThrow(() -> new SeatNotFoundException("Seat " + seatId + " not found"));
+
+        SeatInventory inv = new SeatInventory();
+        inv.setFlightId(flightId);
+        inv.setSeatId(seat.getId());
+        inv.setStatus(SeatStatus.AVAILABLE);
+        try {
+            return seatInventoryRepository.save(inv);
+        } catch (DuplicateKeyException ex) {
+            // another request created it at the same moment (unique flightId+seatId index)
+            return findInventory(flightId, seatId);
+        }
     }
 
     private SeatInventory findInventory(String flightId, String seatId) {
